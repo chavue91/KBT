@@ -1,4 +1,5 @@
-# KBT - Fishing Tournament App
+# KBT - Kayak Bass Tournament 
+## Fishing Tournament App
 
 This project is a Python application with a PostgreSQL database used to manage fishing tournaments.  
 The database tracks tournaments, directors, anglers, livewells, fish, and fish photos.
