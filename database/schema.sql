@@ -89,3 +89,16 @@ uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (fish_id) REFERENCES fish(fish_id)
 	ON DELETE CASCADE
 );
+
+
+-- 1. Index on fish status for fast filtering of APPROVED/PENDING/REJECTED
+CREATE INDEX idx_fish_status ON fish(status);
+
+-- 2. Index on fish livewell_id for fast joins between fish and livewell
+CREATE INDEX idx_fish_livewell_id ON fish(livewell_id);
+
+-- 3. Index on tournament_anglers angler_user_id for fast angler lookups
+CREATE INDEX idx_ta_angler_user_id ON tournament_anglers(angler_user_id);
+
+-- Optional 4th: tournament_id for fast tournament-based filtering
+CREATE INDEX idx_ta_tournament_id ON tournament_anglers(tournament_id);

@@ -1,7 +1,6 @@
--- ============================================================
+
 -- TEST DATA POPULATION SCRIPT (PostgreSQL)
--- Uses CTEs with RETURNING to handle GENERATED ALWAYS AS IDENTITY
--- ============================================================
+
  
 -- ── Users + Directors ────────────────────────────────────────
 WITH inserted_directors AS (
