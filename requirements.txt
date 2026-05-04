@@ -1,2 +1,4 @@
 psycopg2-binary==2.9.11
 python-dotenv==1.2.2
+pymongo==4.7.2
+prettytable==3.17.0

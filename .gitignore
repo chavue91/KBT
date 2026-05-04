@@ -40,3 +40,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.swp
+
+# WSL
+*.zone.identifier
+
+# MongoDB config
+mongod.cfg

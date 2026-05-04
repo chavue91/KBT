@@ -4,6 +4,13 @@ from prettytable import PrettyTable
 from dotenv import load_dotenv
 import os
 
+from mongo.models.fishPhoto import (
+    insert_fish_photo,
+    get_fish_photo_by_fish_id,
+    update_fish_photo_url,
+    delete_fish_photo
+)
+
 load_dotenv()
 
 # ============================================================
@@ -61,6 +68,11 @@ def print_menu():
     print("  8. Update fish catch status")
     print("  --- DELETE ---")
     print("  9. Remove angler from a tournament")
+    print("  --- FISH PHOTOS (MongoDB) ---")
+    print("  10. View photo for a fish")
+    print("  11. Add photo for a fish")
+    print("  12. Update photo URL for a fish")
+    print("  13. Delete photo for a fish")
     print("  0. Exit")
     print("=" * 50)
 
@@ -163,7 +175,6 @@ def add_angler(conn):
         email        = input("  Email: ").strip()
         phone_number = input("  Phone number (optional, press Enter to skip): ").strip() or None
 
-        # Insert into users then anglers using RETURNING
         cursor.execute("""
             WITH new_user AS (
                 INSERT INTO users (first_name, last_name, email, phone_number)
@@ -195,7 +206,6 @@ def register_angler_for_tournament(conn):
         angler_id     = int(input("  Enter angler user ID: ").strip())
         tournament_id = int(input("  Enter tournament ID: ").strip())
 
-        # Register in tournament_anglers then create their livewell
         cursor.execute("""
             WITH new_entry AS (
                 INSERT INTO tournament_anglers (tournament_id, angler_user_id)
@@ -229,7 +239,6 @@ def record_fish_catch(conn):
         species       = input("  Species: ").strip()
         fish_length   = float(input("  Fish length (inches): ").strip())
 
-        # Look up the livewell for this tournament entry
         cursor.execute("""
             SELECT lw.livewell_id
             FROM livewell lw
@@ -315,7 +324,6 @@ def remove_angler_from_tournament(conn):
             print("  No registration found for that angler and tournament.")
             return
 
-        # Cascading delete will also remove livewell and fish records
         cursor.execute("""
             DELETE FROM tournament_anglers
             WHERE angler_user_id = %s AND tournament_id = %s
@@ -335,6 +343,91 @@ def remove_angler_from_tournament(conn):
 
 
 # ============================================================
+# FISH PHOTO OPERATIONS (MongoDB)
+# ============================================================
+
+def view_fish_photo(conn):
+    try:
+        fish_id = int(input("  Enter fish ID: ").strip())
+        doc = get_fish_photo_by_fish_id(fish_id)
+        if not doc:
+            print(f"  No photo found for fish ID {fish_id}.")
+            return
+        print(f"\n  Photo for fish ID {fish_id}:")
+        for key, value in doc.items():
+            if key == "_id":
+                continue
+            print(f"    {key}: {value}")
+    except ValueError:
+        print("  Invalid input — fish ID must be a number.")
+    except Exception as e:
+        print(f"  MongoDB error: {e}")
+
+
+def add_fish_photo(conn):
+    try:
+        fish_id   = int(input("  Enter fish ID: ").strip())
+        photo_url = input("  Enter photo URL: ").strip()
+
+        existing = get_fish_photo_by_fish_id(fish_id)
+        if existing:
+            print(f"  Error: a photo already exists for fish ID {fish_id}.")
+            print(f"  Use option 12 to update it instead.")
+            return
+
+        result = insert_fish_photo(fish_id, photo_url)
+        print(f"  Photo added successfully for fish ID {fish_id}.")
+
+    except ValueError:
+        print("  Invalid input — fish ID must be a number.")
+    except Exception as e:
+        print(f"  MongoDB error: {e}")
+
+
+def update_fish_photo(conn):
+    try:
+        fish_id       = int(input("  Enter fish ID: ").strip())
+        new_photo_url = input("  Enter new photo URL: ").strip()
+
+        existing = get_fish_photo_by_fish_id(fish_id)
+        if not existing:
+            print(f"  No photo found for fish ID {fish_id}.")
+            return
+
+        result = update_fish_photo_url(fish_id, new_photo_url)
+        if result.modified_count == 0:
+            print(f"  No changes made.")
+        else:
+            print(f"  Photo URL updated for fish ID {fish_id}.")
+
+    except ValueError:
+        print("  Invalid input — fish ID must be a number.")
+    except Exception as e:
+        print(f"  MongoDB error: {e}")
+
+
+def remove_fish_photo(conn):
+    try:
+        fish_id = int(input("  Enter fish ID: ").strip())
+
+        existing = get_fish_photo_by_fish_id(fish_id)
+        if not existing:
+            print(f"  No photo found for fish ID {fish_id}.")
+            return
+
+        result = delete_fish_photo(fish_id)
+        if result.deleted_count == 0:
+            print(f"  No photo deleted.")
+        else:
+            print(f"  Photo deleted for fish ID {fish_id}.")
+
+    except ValueError:
+        print("  Invalid input — fish ID must be a number.")
+    except Exception as e:
+        print(f"  MongoDB error: {e}")
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -347,15 +440,19 @@ def main():
     print("\n  Connected to Fishing Tournament database.")
 
     menu_options = {
-        "1": view_all_tournaments,
-        "2": view_all_anglers,
-        "3": view_fish_by_tournament,
-        "4": view_leaderboard,
-        "5": add_angler,
-        "6": register_angler_for_tournament,
-        "7": record_fish_catch,
-        "8": update_fish_status,
-        "9": remove_angler_from_tournament,
+        "1":  view_all_tournaments,
+        "2":  view_all_anglers,
+        "3":  view_fish_by_tournament,
+        "4":  view_leaderboard,
+        "5":  add_angler,
+        "6":  register_angler_for_tournament,
+        "7":  record_fish_catch,
+        "8":  update_fish_status,
+        "9":  remove_angler_from_tournament,
+        "10": view_fish_photo,
+        "11": add_fish_photo,
+        "12": update_fish_photo,
+        "13": remove_fish_photo,
     }
 
     while True:
